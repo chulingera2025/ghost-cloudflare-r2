@@ -25,20 +25,37 @@ Use a public R2 custom domain or an enabled `r2.dev` public URL for `publicUrl`.
 Do not use the S3 API endpoint as `publicUrl`; it is for authenticated object
 API calls.
 
+To store all Ghost uploads in Cloudflare R2, configure the `images`, `media`,
+and `files` storage features to use this adapter. Ghost keeps themes in a
+separate theme storage service, so this does not move theme zip uploads.
+
 ```json
 {
-  "storage": {
-    "active": "ghost-cloudflare-r2",
-    "ghost-cloudflare-r2": {
-      "accountId": "CLOUDFLARE_ACCOUNT_ID",
-      "bucket": "ghost",
-      "accessKeyId": "R2_ACCESS_KEY_ID",
-      "secretAccessKey": "R2_SECRET_ACCESS_KEY",
-      "apiToken": "CLOUDFLARE_API_TOKEN",
-      "publicUrl": "https://cdn.example.com",
-      "prefix": "content/images",
-      "validateBucket": true,
-      "cacheControl": "public, max-age=31536000, immutable"
+  "adapters": {
+    "storage": {
+      "active": "ghost-cloudflare-r2",
+      "ghost-cloudflare-r2": {
+        "accountId": "CLOUDFLARE_ACCOUNT_ID",
+        "bucket": "ghost",
+        "accessKeyId": "R2_ACCESS_KEY_ID",
+        "secretAccessKey": "R2_SECRET_ACCESS_KEY",
+        "apiToken": "CLOUDFLARE_API_TOKEN",
+        "publicUrl": "https://cdn.example.com",
+        "validateBucket": true,
+        "cacheControl": "public, max-age=31536000, immutable"
+      },
+      "images": {
+        "adapter": "ghost-cloudflare-r2",
+        "prefix": "content/images"
+      },
+      "media": {
+        "adapter": "ghost-cloudflare-r2",
+        "prefix": "content/media"
+      },
+      "files": {
+        "adapter": "ghost-cloudflare-r2",
+        "prefix": "content/files"
+      }
     }
   }
 }
@@ -79,8 +96,8 @@ https://<accountId>.r2.cloudflarestorage.com
 ```
 
 `region` defaults to `auto`, matching Cloudflare R2 examples. `prefix` defaults
-to `content/images`; set it to `content/media`, `content/files`, or an empty
-string if your bucket layout requires that.
+to `content/images`; for full upload coverage, set feature-specific prefixes as
+shown above.
 
 ## Scripts
 
