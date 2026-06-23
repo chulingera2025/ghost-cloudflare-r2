@@ -141,7 +141,8 @@ config.production.json:
         "accessKeyId": "YOUR_R2_S3_ACCESS_KEY",
         "secretAccessKey": "YOUR_R2_S3_SECRET_KEY",
         "publicUrl": "https://cdn.example.com",
-        "cacheControl": "public, max-age=31536000, immutable"
+        "cacheControl": "public, max-age=31536000, immutable",
+        "syncOnBoot": true
       },
       "images": {
         "adapter": "ghost-cloudflare-r2",
