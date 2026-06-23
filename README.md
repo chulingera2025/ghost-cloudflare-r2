@@ -8,6 +8,10 @@ existence checks, and deletion.
 
 ## Changelog
 
+### v0.1.5
+
+- `syncOnBoot` now defaults to `true`. Set to `false` explicitly to opt out.
+
 ### v0.1.4
 
 - Add `syncOnBoot` config option. When set to `true`, the adapter
