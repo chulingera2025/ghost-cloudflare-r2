@@ -9,15 +9,68 @@ deletion.
 
 ## Install
 
+### 1. Enter your Ghost site directory
+
+```bash
+cd /path/to/your/ghost/site
+```
+
+If you installed Ghost via the CLI, the default location is typically:
+
+```bash
+# Ghost-CLI install (recommended)
+cd /var/www/ghost
+
+# Local development
+cd ~/my-ghost-blog
+```
+
+### 2. Install the package
+
 ```bash
 npm install ghost-cloudflare-r2
 ```
 
-For a Ghost content adapter install, copy or install the package under:
+This downloads the adapter to `node_modules/ghost-cloudflare-r2`.
+
+### 3. Link the adapter to Ghost's storage directory
+
+Ghost loads custom storage adapters from `content/adapters/storage/`. Create the
+directory and symlink the installed package:
+
+```bash
+# Create the adapters directory if it doesn't exist
+mkdir -p content/adapters/storage
+
+# Symlink the package into it
+ln -s ../../../node_modules/ghost-cloudflare-r2 content/adapters/storage/ghost-cloudflare-r2
+```
+
+The resulting structure should look like:
 
 ```text
-content/adapters/storage/ghost-cloudflare-r2
+content/
+└── adapters/
+    └── storage/
+        └── ghost-cloudflare-r2 -> ../../../node_modules/ghost-cloudflare-r2
 ```
+
+> **Why a symlink?** Ghost resolves adapters by looking for a folder named after
+> the adapter under `content/adapters/storage/`. Symlinking avoids duplicating
+> the package — updates via `npm update ghost-cloudflare-r2` take effect
+> automatically. If you prefer not to symlink, you can copy the package there
+> instead:
+>
+> ```bash
+> cp -r node_modules/ghost-cloudflare-r2 content/adapters/storage/ghost-cloudflare-r2
+> ```
+>
+> (You will need to re-copy on each update.)
+
+### 4. Configure Ghost
+
+Add the adapter configuration to your `config.production.json` (or
+`config.development.json` for local dev) as shown below.
 
 ## Configuration
 
