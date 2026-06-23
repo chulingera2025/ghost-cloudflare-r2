@@ -74,6 +74,20 @@ Add the adapter configuration to your `config.production.json` (or
 
 ## Configuration
 
+### Prerequisites
+
+Before configuring, create the following credentials in your
+[Cloudflare Dashboard](https://dash.cloudflare.com/):
+
+| Field | Where to create it | What it is |
+|-------|-------------------|------------|
+| `accountId` | **R2 Dashboard** → top right or URL (`/` after `r2/`) | Your Cloudflare account ID (31-32 hex chars) — always visible on any R2 page |
+| `accessKeyId` / `secretAccessKey` | **R2** → your bucket → **管理 / Manage** → **兼容S3的凭据 / S3-compatible credentials** → **创建 / Create** | S3 兼容密钥，用于通过 AWS SDK 读写 R2 存储桶。**注意：** 这是 R2 存储桶级别的 S3 凭据，不是 Cloudflare API 令牌 |
+| `apiToken` | **My Profile / 个人资料** → **API Tokens / API 令牌** → **Create Token / 创建令牌** | Cloudflare API 令牌，用于 `validateBucket` 时通过 Cloudflare SDK 验证 bucket 存在性。**注意：** 这是「API 令牌」部分生成的，**不是** R2 的「S3 兼容」凭据 |
+| `publicUrl` | **R2** → your bucket → **设置 / Settings** → **公共URL / Public URL** | R2 存储桶的公网访问域名。可以是绑定的自定义域名，或开启的 `r2.dev` 子域名 |
+
+### Adapter config
+
 Use a public R2 custom domain or an enabled `r2.dev` public URL for `publicUrl`.
 Do not use the S3 API endpoint as `publicUrl`; it is for authenticated object
 API calls.
@@ -88,11 +102,11 @@ separate theme storage service, so this does not move theme zip uploads.
     "storage": {
       "active": "ghost-cloudflare-r2",
       "ghost-cloudflare-r2": {
-        "accountId": "CLOUDFLARE_ACCOUNT_ID",
+        "accountId": "YOUR_CLOUDFLARE_ACCOUNT_ID",
         "bucket": "ghost",
-        "accessKeyId": "R2_ACCESS_KEY_ID",
-        "secretAccessKey": "R2_SECRET_ACCESS_KEY",
-        "apiToken": "CLOUDFLARE_API_TOKEN",
+        "accessKeyId": "YOUR_R2_S3_ACCESS_KEY",
+        "secretAccessKey": "YOUR_R2_S3_SECRET_KEY",
+        "apiToken": "YOUR_CLOUDFLARE_API_TOKEN",
         "publicUrl": "https://cdn.example.com",
         "validateBucket": true,
         "cacheControl": "public, max-age=31536000, immutable"
@@ -130,6 +144,10 @@ R2_FORCE_PATH_STYLE
 R2_VALIDATE_BUCKET
 R2_CACHE_CONTROL
 ```
+
+The `apiToken` corresponds to the **API 令牌 / API Token** section in
+Cloudflare Dashboard (My Profile → API Tokens). It is **NOT** the S3-compatible
+credential — do not confuse it with `accessKeyId` / `secretAccessKey`.
 
 ## Options
 
