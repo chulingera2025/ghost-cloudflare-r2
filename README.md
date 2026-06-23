@@ -99,10 +99,10 @@ Before configuring, create the following credentials in your
 
 | Field | Where to create it | What it is |
 |-------|-------------------|------------|
-| `accountId` | **R2 Dashboard** → top right or URL (`/` after `r2/`) | Your Cloudflare account ID (31-32 hex chars) — always visible on any R2 page |
-| `accessKeyId` / `secretAccessKey` | **R2** → your bucket → **管理 / Manage** → **兼容S3的凭据 / S3-compatible credentials** → **创建 / Create** | S3 兼容密钥，用于通过 AWS SDK 读写 R2 存储桶。**注意：** 这是 R2 存储桶级别的 S3 凭据，不是 Cloudflare API 令牌 |
-| `apiToken` | **My Profile / 个人资料** → **API Tokens / API 令牌** → **Create Token / 创建令牌** | Cloudflare API 令牌，用于 `validateBucket` 时通过 Cloudflare SDK 验证 bucket 存在性。**注意：** 这是「API 令牌」部分生成的，**不是** R2 的「S3 兼容」凭据 |
-| `publicUrl` | **R2** → your bucket → **设置 / Settings** → **公共URL / Public URL** | R2 存储桶的公网访问域名。可以是绑定的自定义域名，或开启的 `r2.dev` 子域名 |
+| `accountId` | **R2 Dashboard** → top right, or visible in the URL after `r2/` | Your Cloudflare account ID (31-32 hex chars) — always visible on any R2 page |
+| `accessKeyId` / `secretAccessKey` | **R2** → your bucket → **Manage** → **S3-compatible credentials** → **Create** | S3-compatible access key for reading/writing the bucket via AWS SDK. **Note:** this is a bucket-level S3 credential, **not** a Cloudflare API token |
+| `apiToken` | **My Profile** → **API Tokens** → **Create Token** | Cloudflare API token used for bucket existence validation (`validateBucket`). **Note:** this is created under "API Tokens", **not** under "S3-compatible credentials" |
+| `publicUrl` | **R2** → your bucket → **Settings** → **Public URL** | Public-facing URL for the bucket — either a custom domain or the auto-generated `r2.dev` subdomain |
 
 ### Adapter config
 
