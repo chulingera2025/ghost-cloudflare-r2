@@ -8,18 +8,15 @@ existence checks, and deletion.
 
 ## Changelog
 
-### v0.1.5
+### v0.2.0
 
-- `syncOnBoot` now defaults to `true`. Set to `false` explicitly to opt out.
-
-### v0.1.4
-
-- Add `syncOnBoot` config option. When set to `true`, the adapter
-  automatically uploads all existing local files under
-  `content/images`, `content/media`, and `content/files` to the R2
-  bucket on Ghost startup. A `.r2-synced` lock file is written to
-  `content/` after the first successful sync so subsequent boots skip
-  the scan. Delete the lock file to force a re-sync.
+- Add `syncOnBoot` config option (defaults to `true`). When enabled, the
+  adapter automatically uploads all existing local files under
+  `content/images`, `content/media`, and `content/files` to the R2 bucket
+  on Ghost startup. A `.r2-synced` lock file is written to `content/`
+  after the first successful sync so subsequent boots skip the scan.
+  Delete the lock file to force a re-sync. Set `"syncOnBoot": false` to
+  opt out.
 - Expose `syncLocalToR2()` method for programmatic use.
 
 ## Install
