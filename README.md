@@ -36,7 +36,25 @@ This downloads the adapter to `node_modules/ghost-cloudflare-r2`.
 ### 3. Link the adapter to Ghost's storage directory
 
 Ghost loads custom storage adapters from `content/adapters/storage/`. Create the
-directory and symlink the installed package:
+directory and symlink the installed package.
+
+> **⚠️ Permission note for Ghost-CLI installs:** Ghost-CLI creates a `ghost`
+> system user to run the site. Your login user does not have write access to
+> `/var/www/ghost/content/` by default. Before creating the symlink, run:
+>
+> ```bash
+> # Add your user to the ghost group
+> sudo usermod -aG ghost $USER
+>
+> # Apply the group change in the current shell
+> newgrp ghost
+>
+> # Give the group write permission to the content directory
+> # (adjust the path to match your actual Ghost install location)
+> sudo chmod -R 775 /var/www/ghost/content
+> ```
+>
+> Now create the directory and symlink:
 
 ```bash
 # Create the adapters directory if it doesn't exist
