@@ -58,7 +58,6 @@ function createStorage(s3Client, overrides = {}) {
         accessKeyId: 'access-key',
         secretAccessKey: 'secret-key',
         publicUrl: 'https://cdn.example.com',
-        validateBucket: false,
         s3Client,
         ...overrides
     });
@@ -137,30 +136,8 @@ test('serve redirects local Ghost paths to the public R2 URL', async () => {
     });
 });
 
-test('validates the bucket once through the Cloudflare SDK when enabled', async () => {
-    const s3Client = new MockS3Client();
-    const calls = [];
-    const storage = createStorage(s3Client, {
-        apiToken: 'token',
-        validateBucket: true,
-        cloudflareClient: {
-            r2: {
-                buckets: {
-                    async get(bucket, params) {
-                        calls.push({bucket, params});
-                    }
-                }
-            }
-        }
-    });
-
-    await storage.exists('missing.jpg', '2026/06');
-    await storage.exists('missing.jpg', '2026/06');
-
-    assert.deepEqual(calls, [
-        {
-            bucket: 'ghost',
-            params: {account_id: 'account-id'}
-        }
-    ]);
+test('adapter does not require apiToken or validateBucket', async () => {
+    const storage = createStorage(new MockS3Client());
+    assert.ok(storage instanceof Storage);
+    assert.equal(storage.config.bucket, 'ghost');
 });

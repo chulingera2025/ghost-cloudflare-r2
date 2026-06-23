@@ -2,10 +2,9 @@
 
 Ghost 6 storage adapter for Cloudflare R2.
 
-The adapter extends `ghost-storage-base`. It uses the official `cloudflare`
-Node SDK for R2 bucket validation and the Cloudflare-documented S3-compatible
-R2 data API through AWS SDK v3 for object upload, read, existence checks, and
-deletion.
+The adapter extends `ghost-storage-base` and uses the Cloudflare-documented
+S3-compatible R2 data API through AWS SDK v3 for object upload, read,
+existence checks, and deletion.
 
 ## Install
 
@@ -100,8 +99,7 @@ Before configuring, create the following credentials in your
 | Field | Where to create it | What it is |
 |-------|-------------------|------------|
 | `accountId` | **R2 Dashboard** → top right, or visible in the URL after `r2/` | Your Cloudflare account ID (31-32 hex chars) — always visible on any R2 page |
-| `accessKeyId` / `secretAccessKey` | **R2** → your bucket → **Manage** → **S3-compatible credentials** → **Create** | S3-compatible access key for reading/writing the bucket via AWS SDK. **Note:** this is a bucket-level S3 credential, **not** a Cloudflare API token |
-| `apiToken` | **My Profile** → **API Tokens** → **Create Token** | Cloudflare API token used for bucket existence validation (`validateBucket`). **Note:** this is created under "API Tokens", **not** under "S3-compatible credentials" |
+| `accessKeyId` / `secretAccessKey` | **R2** → your bucket → **Manage** → **S3-compatible credentials** → **Create** | S3-compatible access key for reading/writing the bucket via AWS SDK |
 | `publicUrl` | **R2** → your bucket → **Settings** → **Public URL** | Public-facing URL for the bucket — either a custom domain or the auto-generated `r2.dev` subdomain |
 
 ### Adapter config
@@ -124,9 +122,7 @@ separate theme storage service, so this does not move theme zip uploads.
         "bucket": "ghost",
         "accessKeyId": "YOUR_R2_S3_ACCESS_KEY",
         "secretAccessKey": "YOUR_R2_S3_SECRET_KEY",
-        "apiToken": "YOUR_CLOUDFLARE_API_TOKEN",
         "publicUrl": "https://cdn.example.com",
-        "validateBucket": true,
         "cacheControl": "public, max-age=31536000, immutable"
       },
       "images": {
@@ -150,7 +146,6 @@ Environment variable fallbacks:
 
 ```text
 CLOUDFLARE_ACCOUNT_ID
-CLOUDFLARE_API_TOKEN
 R2_BUCKET
 R2_ACCESS_KEY_ID
 R2_SECRET_ACCESS_KEY
@@ -159,24 +154,13 @@ R2_PREFIX
 R2_ENDPOINT
 R2_REGION
 R2_FORCE_PATH_STYLE
-R2_VALIDATE_BUCKET
 R2_CACHE_CONTROL
 ```
-
-The `apiToken` corresponds to the **API 令牌 / API Token** section in
-Cloudflare Dashboard (My Profile → API Tokens). It is **NOT** the S3-compatible
-credential — do not confuse it with `accessKeyId` / `secretAccessKey`.
 
 ## Options
 
 `accountId`, `bucket`, `accessKeyId`, `secretAccessKey`, and `publicUrl` are
 required.
-
-`apiToken` is required when `validateBucket` is enabled. Bucket validation uses:
-
-```js
-client.r2.buckets.get(bucket, {account_id: accountId});
-```
 
 `endpoint` defaults to:
 

@@ -12,7 +12,6 @@ const {
     S3Client
 } = require('@aws-sdk/client-s3');
 const BaseAdapter = require('ghost-storage-base');
-const CloudflareModule = require('cloudflare');
 const mime = require('mime-types');
 
 const {
@@ -21,8 +20,6 @@ const {
     buildPublicUrl,
     normalizeConfig
 } = require('./lib/config');
-
-const Cloudflare = CloudflareModule.default || CloudflareModule;
 
 class GhostCloudflareR2Storage extends BaseAdapter {
     constructor(options = {}) {
@@ -38,14 +35,9 @@ class GhostCloudflareR2Storage extends BaseAdapter {
                 secretAccessKey: this.config.secretAccessKey
             }
         });
-        this.cloudflare = options.cloudflareClient || (this.config.apiToken ? new Cloudflare({
-            apiToken: this.config.apiToken
-        }) : undefined);
-        this.bucketValidation = undefined;
     }
 
     async save(file, targetDir) {
-        await this.ensureBucket();
 
         const dir = targetDir || this.getTargetDir();
         const relativePath = await this.getUniqueFileName(file, dir);
@@ -61,8 +53,6 @@ class GhostCloudflareR2Storage extends BaseAdapter {
     }
 
     async saveRaw(buffer, targetPath) {
-        await this.ensureBucket();
-
         const key = buildKey(this.config, targetPath);
         await this.putObject({
             key,
@@ -74,8 +64,6 @@ class GhostCloudflareR2Storage extends BaseAdapter {
     }
 
     async exists(fileName, targetDir) {
-        await this.ensureBucket();
-
         const key = buildKeyFromParts(this.config, fileName, targetDir);
         try {
             await this.client.send(new HeadObjectCommand({
@@ -111,8 +99,6 @@ class GhostCloudflareR2Storage extends BaseAdapter {
     }
 
     async delete(fileName, targetDir) {
-        await this.ensureBucket();
-
         const key = buildKeyFromParts(this.config, fileName, targetDir);
         try {
             await this.client.send(new DeleteObjectCommand({
@@ -127,8 +113,6 @@ class GhostCloudflareR2Storage extends BaseAdapter {
     }
 
     async read(file) {
-        await this.ensureBucket();
-
         const key = buildKey(this.config, file.path || file.url || file.name);
         const response = await this.client.send(new GetObjectCommand({
             Bucket: this.config.bucket,
@@ -158,29 +142,6 @@ class GhostCloudflareR2Storage extends BaseAdapter {
         }
 
         await this.client.send(new PutObjectCommand(input));
-    }
-
-    async ensureBucket() {
-        if (!this.config.validateBucket) {
-            return;
-        }
-
-        if (!this.cloudflare) {
-            throw new TypeError('apiToken is required when validateBucket is enabled');
-        }
-
-        if (!this.bucketValidation) {
-            this.bucketValidation = this.cloudflare.r2.buckets
-                .get(this.config.bucket, {
-                    account_id: this.config.accountId
-                })
-                .catch(error => {
-                    this.bucketValidation = undefined;
-                    throw error;
-                });
-        }
-
-        await this.bucketValidation;
     }
 
     isNotFound(error) {
