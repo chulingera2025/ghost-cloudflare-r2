@@ -156,13 +156,20 @@ class GhostCloudflareR2Storage extends BaseAdapter {
         const contentRoot = this.config.contentPath || path.join(process.cwd(), 'content');
         const lockFile = path.join(contentRoot, '.r2-synced');
 
+        console.log(`[ghost-cloudflare-r2] Sync: content root = ${contentRoot}`);
+
         // Check lock file — skip if already synced
         try {
             await fs.promises.access(lockFile);
+            const lockData = await fs.promises.readFile(lockFile, 'utf-8');
+            console.log('[ghost-cloudflare-r2] Sync: lock file found, skipping sync');
+            console.log(`[ghost-cloudflare-r2] Sync: ${lockData.trim()}`);
             return { synced: false, reason: 'lock file exists' };
         } catch {
             // Lock file doesn't exist — proceed
         }
+
+        console.log('[ghost-cloudflare-r2] Sync: no lock file, starting initial sync to R2...');
 
         const syncDirs = [
             { local: 'images', prefix: 'content/images' },
@@ -181,23 +188,31 @@ class GhostCloudflareR2Storage extends BaseAdapter {
             try {
                 await fs.promises.access(dirPath);
             } catch {
+                console.log(`[ghost-cloudflare-r2] Sync: ${dirPath} not found, skipping`);
                 continue;
             }
 
+            console.log(`[ghost-cloudflare-r2] Sync: scanning ${dirPath}...`);
             const result = await this._syncDirectory(dirPath, prefix);
             uploaded += result.uploaded;
             skipped += result.skipped;
             errors += result.errors;
+            console.log(`[ghost-cloudflare-r2] Sync: ${local} done (${result.uploaded} uploaded, ${result.skipped} skipped, ${result.errors} errors)`);
         }
 
         // Write lock file so subsequent boots skip the sync
-        await fs.promises.writeFile(lockFile, JSON.stringify({
+        const lockContent = JSON.stringify({
             syncedAt: new Date().toISOString(),
             bucket: this.config.bucket,
             uploaded,
             skipped,
             errors
-        }, null, 2) + '\n');
+        }, null, 2) + '\n';
+        await fs.promises.mkdir(path.dirname(lockFile), { recursive: true });
+        await fs.promises.writeFile(lockFile, lockContent);
+
+        console.log(`[ghost-cloudflare-r2] Sync: complete — ${uploaded} uploaded, ${skipped} skipped, ${errors} errors`);
+        console.log(`[ghost-cloudflare-r2] Sync: lock file written to ${lockFile}`);
 
         return { synced: true, uploaded, skipped, errors };
     }
