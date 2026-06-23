@@ -6,6 +6,18 @@ The adapter extends `ghost-storage-base` and uses the Cloudflare-documented
 S3-compatible R2 data API through AWS SDK v3 for object upload, read,
 existence checks, and deletion.
 
+## Changelog
+
+### v0.1.4
+
+- Add `syncOnBoot` config option. When set to `true`, the adapter
+  automatically uploads all existing local files under
+  `content/images`, `content/media`, and `content/files` to the R2
+  bucket on Ghost startup. A `.r2-synced` lock file is written to
+  `content/` after the first successful sync so subsequent boots skip
+  the scan. Delete the lock file to force a re-sync.
+- Expose `syncLocalToR2()` method for programmatic use.
+
 ## Install
 
 ### 1. Enter your Ghost site directory
@@ -111,6 +123,8 @@ API calls.
 To store all Ghost uploads in Cloudflare R2, configure the `images`, `media`,
 and `files` storage features to use this adapter. Ghost keeps themes in a
 separate theme storage service, so this does not move theme zip uploads.
+
+config.production.json:
 
 ```json
 {

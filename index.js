@@ -1,6 +1,7 @@
 'use strict';
 
 const fs = require('node:fs');
+const path = require('node:path');
 
 const {
     DeleteObjectCommand,
@@ -18,7 +19,8 @@ const {
     buildKey,
     buildKeyFromParts,
     buildPublicUrl,
-    normalizeConfig
+    normalizeConfig,
+    normalizeRelativePath
 } = require('./lib/config');
 
 class GhostCloudflareR2Storage extends BaseAdapter {
@@ -35,6 +37,12 @@ class GhostCloudflareR2Storage extends BaseAdapter {
                 secretAccessKey: this.config.secretAccessKey
             }
         });
+
+        if (this.config.syncOnBoot) {
+            this.syncLocalToR2().catch(error => {
+                console.error('[ghost-cloudflare-r2] Sync failed:', error);
+            });
+        }
     }
 
     async save(file, targetDir) {
@@ -142,6 +150,133 @@ class GhostCloudflareR2Storage extends BaseAdapter {
         }
 
         await this.client.send(new PutObjectCommand(input));
+    }
+
+    async syncLocalToR2() {
+        const contentRoot = this.config.contentPath || path.join(process.cwd(), 'content');
+        const lockFile = path.join(contentRoot, '.r2-synced');
+
+        // Check lock file — skip if already synced
+        try {
+            await fs.promises.access(lockFile);
+            return { synced: false, reason: 'lock file exists' };
+        } catch {
+            // Lock file doesn't exist — proceed
+        }
+
+        const syncDirs = [
+            { local: 'images', prefix: 'content/images' },
+            { local: 'media', prefix: 'content/media' },
+            { local: 'files', prefix: 'content/files' }
+        ];
+
+        let uploaded = 0;
+        let skipped = 0;
+        let errors = 0;
+
+        for (const { local, prefix } of syncDirs) {
+            const dirPath = path.join(contentRoot, local);
+
+            // Skip missing directories (fresh install, no uploads yet)
+            try {
+                await fs.promises.access(dirPath);
+            } catch {
+                continue;
+            }
+
+            const result = await this._syncDirectory(dirPath, prefix);
+            uploaded += result.uploaded;
+            skipped += result.skipped;
+            errors += result.errors;
+        }
+
+        // Write lock file so subsequent boots skip the sync
+        await fs.promises.writeFile(lockFile, JSON.stringify({
+            syncedAt: new Date().toISOString(),
+            bucket: this.config.bucket,
+            uploaded,
+            skipped,
+            errors
+        }, null, 2) + '\n');
+
+        return { synced: true, uploaded, skipped, errors };
+    }
+
+    async _syncDirectory(dirPath, prefix) {
+        let uploaded = 0;
+        let skipped = 0;
+        let errors = 0;
+
+        const walk = async (currentDir, relativeDir) => {
+            let entries;
+            try {
+                entries = await fs.promises.readdir(currentDir, { withFileTypes: true });
+            } catch (err) {
+                if (err.code === 'ENOENT') return;
+                throw err;
+            }
+
+            for (const entry of entries) {
+                // Skip hidden files/directories
+                if (entry.name.startsWith('.')) continue;
+
+                const fullPath = path.join(currentDir, entry.name);
+                const relPath = relativeDir
+                    ? path.posix.join(relativeDir, entry.name)
+                    : entry.name;
+
+                if (entry.isDirectory()) {
+                    await walk(fullPath, relPath);
+                } else if (entry.isFile()) {
+                    const key = normalizeRelativePath(
+                        path.posix.join(prefix, relPath),
+                        'key'
+                    );
+
+                    try {
+                        await this.client.send(new HeadObjectCommand({
+                            Bucket: this.config.bucket,
+                            Key: key
+                        }));
+                        skipped++;
+                    } catch (err) {
+                        if (this.isNotFound(err)) {
+                            try {
+                                const putInput = {
+                                    Bucket: this.config.bucket,
+                                    Key: key,
+                                    Body: fs.createReadStream(fullPath)
+                                };
+                                const contentType = mime.lookup(entry.name);
+                                if (contentType) {
+                                    putInput.ContentType = contentType;
+                                }
+                                if (this.config.cacheControl) {
+                                    putInput.CacheControl = this.config.cacheControl;
+                                }
+                                await this.client.send(new PutObjectCommand(putInput));
+                                uploaded++;
+                            } catch (uploadErr) {
+                                errors++;
+                                console.error(
+                                    `[ghost-cloudflare-r2] Failed to upload ${key}:`,
+                                    uploadErr.message
+                                );
+                            }
+                        } else {
+                            errors++;
+                            console.error(
+                                `[ghost-cloudflare-r2] Error checking ${key}:`,
+                                err.message
+                            );
+                        }
+                    }
+                }
+            }
+        };
+
+        await walk(dirPath, '');
+        return { uploaded, skipped, errors };
     }
 
     isNotFound(error) {
