@@ -8,6 +8,12 @@ existence checks, and deletion.
 
 ## Changelog
 
+### v2.0.1
+
+- Improve sync reliability: read `GHOST_CONTENT` env var for content path
+  detection; verbose logging on every sync step; auto-create parent
+  directories before writing `.r2-synced` lock file.
+
 ### v0.2.0
 
 - Add `syncOnBoot` config option (defaults to `true`). When enabled, the
